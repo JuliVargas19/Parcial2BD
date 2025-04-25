@@ -103,14 +103,34 @@ app.get('/api/restaurantes', async (req, res) => {
     res.json({ message: 'El empleado ha sido eliminado' });
   });
 
-  app.post('/api/productos', async (req, res) => {
-    const { nombre, precio } = req.body;
+  app.get('/api/productos', async (req, res) => {
+    const result = await pool.query('SELECT * FROM producto');
+    res.json(result.rows);
+  });
+
+ app.post('/api/productos', async (req, res) => {
+  const { nombre, precio } = req.body;
+
+  if (!nombre || !precio) {
+    return res.status(400).json({ error: 'Nombre y precio son requeridos' });
+  }
+
+  if (isNaN(precio)) {
+    return res.status(400).json({ error: 'El precio debe ser un número válido' });
+  }
+
+  try {
     const result = await pool.query(
       'INSERT INTO producto (nombre, precio) VALUES ($1, $2) RETURNING *',
       [nombre, precio]
     );
     res.status(201).json(result.rows[0]);
-  });
+  } catch (error) {
+    console.error('Error al insertar producto:', error);
+    res.status(500).json({ error: 'Error al insertar el producto en la base de datos' });
+  }
+});
+
   
   app.put('/api/productos/:id', async (req, res) => {
     const { id } = req.params;
